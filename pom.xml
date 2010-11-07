@@ -38,5 +38,10 @@
   		<type>jar</type>
   		<scope>compile</scope>
   	</dependency>
+	<dependency>
+	  <groupId>org.hyperic</groupId>
+	  <artifactId>sigar</artifactId>
+	  <version>1.6.3</version>
+	</dependency>
   </dependencies>  
 </project>

@@ -7,6 +7,7 @@ import java.lang.management.ManagementFactory;
 import java.lang.management.OperatingSystemMXBean;
 
 import org.hyperic.sigar.Cpu;
+import org.hyperic.sigar.CpuPerc;
 import org.hyperic.sigar.FileSystem;
 import org.hyperic.sigar.FileSystemUsage;
 import org.hyperic.sigar.Mem;
@@ -46,7 +47,7 @@ public class AgentThread implements Runnable {
 		long[] procList = null;
 		long readBytes = 0;
 		long writeBytes = 0;
-		//CpuPerc cpuPerc = null;
+		CpuPerc cpuPerc = null;
 		Cpu cpu = null;
 		try {
 			mem = sigar.getMem();
@@ -70,7 +71,7 @@ public class AgentThread implements Runnable {
 				writeBytes += fileSystemUsage.getDiskWriteBytes();
 			}
 			
-			//cpuPerc = sigar.getCpuPerc();
+			cpuPerc = sigar.getCpuPerc();
 			cpu = sigar.getCpu(); //take the whole lis tof cpus
 		} catch (SigarException e) {
 			logger.error("could not get sigar objects from Sigar library. cause is : " + e.getMessage(), e);
@@ -88,7 +89,7 @@ public class AgentThread implements Runnable {
 		logger.info("swap out : " + swap.getPageOut());
 		logger.info("i/o in : " + readBytes);
 		logger.info("i/o out : " + writeBytes);
-		//logger.info("system intrerrupts : " + cpuPerc.getIrq());
+		logger.info("system intrerrupts percentage : " + cpuPerc.getIrq());
 		//logger.info("system context switches : " + cpuPerc.);
 		logger.info("user time : " + cpu.getUser());
 		logger.info("system time : " + cpu.getSys());

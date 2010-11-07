@@ -1,3 +1,4 @@
+package sim.agent;
 import java.util.HashMap;
 import java.util.Map;
 

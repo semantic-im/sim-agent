@@ -16,6 +16,7 @@
 package sim.agent;
 
 import java.io.IOException;
+import java.net.URL;
 import java.util.concurrent.Executors;
 import java.util.concurrent.RejectedExecutionException;
 import java.util.concurrent.ScheduledExecutorService;
@@ -36,6 +37,8 @@ import org.slf4j.LoggerFactory;
 public class Main {
 
 	private static final Logger logger = LoggerFactory.getLogger(Main.class);
+	
+	private static final String JAVA_LIBRARY_PATH = "java.library.path";
 	
 	private static final String MS = "MS";
 	private static final String S = "S";
@@ -72,12 +75,13 @@ public class Main {
 	 * @param args
 	 */
 	public static void main(String[] args) throws IOException {
-		//TODO check that it is started as root (if not we get permission errors whn readying system processes)
-		
-		//TODO find a way to avoid loading library from a hardcoded path
-		System.load("/home/valer/Projects/sim/workspace/sim-agent/lib/libsigar-x86-linux.so");
-		
 		Main main = new Main();
+		
+		URL libURL = main.getClass().getResource("/libsigar-x86-linux.so");
+		String libraryPath = System.getProperties().getProperty(JAVA_LIBRARY_PATH);
+		libraryPath += libraryPath + ":" + libURL.getPath().substring(0, libURL.getPath().lastIndexOf("/"));
+		System.getProperties().setProperty(JAVA_LIBRARY_PATH, libraryPath);
+		
 		switch (args.length) {
 		case 0:
 			main.printUsage();
