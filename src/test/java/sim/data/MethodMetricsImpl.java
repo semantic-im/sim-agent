@@ -1,10 +1,10 @@
-package sim.agent;
+package sim.data;
 import java.util.HashMap;
 import java.util.Map;
 
 import sim.data.MethodMetrics;
 
-public class TestMethodMetrics implements MethodMetrics {
+public class MethodMetricsImpl implements MethodMetrics {
 
 	/**
 	 * serialVersionUID

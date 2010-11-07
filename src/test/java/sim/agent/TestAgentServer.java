@@ -8,6 +8,10 @@ import java.net.MalformedURLException;
 import java.net.URL;
 import java.net.URLConnection;
 
+import sim.data.MethodMetricsImpl;
+
+import junit.framework.TestCase;
+
 /**
  * 
  */
@@ -16,7 +20,18 @@ import java.net.URLConnection;
  * @author valer
  *
  */
-public class TestAgentServer {
+public class TestAgentServer extends TestCase {
+	
+	@Override
+	protected void setUp() throws Exception {
+		AgentServerThread agentServerThread = new AgentServerThread();
+		Thread thread = new Thread(agentServerThread);
+		thread.run();
+	}
+
+	public TestAgentServer() {
+		
+	}
 	
 	public void test() throws MalformedURLException, IOException {
 		URL url = new URL("http://localhost:8088/agent"); 
@@ -27,7 +42,7 @@ public class TestAgentServer {
 	    
 	    //DataOutputStream dos = new DataOutputStream (urlConn.getOutputStream());
 	    	    
-	    TestMethodMetrics tmm = new TestMethodMetrics();
+	    MethodMetricsImpl tmm = new MethodMetricsImpl();
 	    ObjectOutputStream oos = new ObjectOutputStream(urlConn.getOutputStream());
 	    oos.writeObject(tmm);
 	    
@@ -43,12 +58,7 @@ public class TestAgentServer {
 	    String s = dis.readLine(); 
 	    dis.close(); 
 	  
-	    if (s.equals("SUCCESS")) { 
-	      //toDoList.addItem("sdsdfdsfsdfsdf sdf"); 
-	      //addTextField.setText(""); 
-	    } else { 
-	      //addTextField.setText("Post Error!"); 
-	    }		
+	    assertEquals(s, "SUCCESS");
 	}
 	
 	public static void main(String[] args) throws MalformedURLException, IOException {
