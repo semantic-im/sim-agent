@@ -1,5 +1,5 @@
 <project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
-  xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/maven-v4_0_0.xsd">
+	xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/maven-v4_0_0.xsd">
 	<parent>
 		<artifactId>sim-pom</artifactId>
 		<groupId>sim</groupId>
@@ -7,41 +7,42 @@
 		<relativePath>../sim-pom/pom.xml</relativePath>
 	</parent>
 	<modelVersion>4.0.0</modelVersion>
-  <artifactId>sim-agent</artifactId>
-  <name>sim-agent</name>
-  <description>Semantic Instrumentation and Monitoring - Agent Module</description>
-  <url>http://sim.softgress.com</url>
-  <organization>
-  	<name>Softgress</name>
-  	<url>http://www.softgress.com</url>
-  </organization>
-  <dependencies>
-    <dependency>
-      <groupId>junit</groupId>
-      <artifactId>junit</artifactId>
-    </dependency>
-  	<dependency>
-  		<groupId>sim</groupId>
-  		<artifactId>sim-commons</artifactId>
-  	</dependency>
-  	<dependency>
-  		<groupId>org.slf4j</groupId>
-  		<artifactId>slf4j-api</artifactId>
-  		<version>1.6.1</version>
-  		<type>jar</type>
-  		<scope>compile</scope>
-  	</dependency>
-  	<dependency>
-  		<groupId>ch.qos.logback</groupId>
-  		<artifactId>logback-classic</artifactId>
-  		<version>0.9.26</version>
-  		<type>jar</type>
-  		<scope>compile</scope>
-  	</dependency>
-	<dependency>
-	  <groupId>org.hyperic</groupId>
-	  <artifactId>sigar</artifactId>
-	  <version>1.6.3</version>
-	</dependency>
-  </dependencies>  
+	<artifactId>sim-agent</artifactId>
+	<name>sim-agent</name>
+	<description>Semantic Instrumentation and Monitoring - Agent Module</description>
+	<url>http://sim.softgress.com</url>
+	<organization>
+		<name>Softgress</name>
+		<url>http://www.softgress.com</url>
+	</organization>
+	<dependencies>
+		<dependency>
+			<groupId>junit</groupId>
+			<artifactId>junit</artifactId>
+		</dependency>
+		<dependency>
+			<groupId>sim</groupId>
+			<artifactId>sim-commons</artifactId>
+		</dependency>
+		<dependency>
+			<groupId>org.slf4j</groupId>
+			<artifactId>slf4j-api</artifactId>
+		</dependency>
+		<dependency>
+			<groupId>ch.qos.logback</groupId>
+			<artifactId>logback-classic</artifactId>
+		</dependency>
+		<dependency>
+			<groupId>org.hyperic</groupId>
+			<artifactId>sigar</artifactId>
+			<version>1.6.3.82</version>
+		</dependency>
+	</dependencies>
+	<repositories>
+		<repository>
+			<id>jboss-public-repository-group</id>
+			<name>JBoss Public Maven Repository Group</name>
+			<url>https://repository.jboss.org/nexus/content/groups/public-jboss/</url>
+		</repository>
+	</repositories>
 </project>
