@@ -50,12 +50,18 @@ public class Main {
 	
 	private final ScheduledExecutorService scheduler = Executors.newScheduledThreadPool(1);
 
+	/*
+	 * Starts the Http Server listening for method metrics
+	 */
 	public void startServer() {
 		AgentServerThread agentServerThread = new AgentServerThread();
 		Thread thread = new Thread(agentServerThread);
 		thread.run();
 	}
 	
+	/*
+	 * Runs the agent thread and also start the http server
+	 */
 	public boolean runAgent() {
 		assert period > 0;
 		
