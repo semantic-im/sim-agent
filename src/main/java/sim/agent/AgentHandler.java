@@ -23,6 +23,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import sim.data.MethodMetrics;
+import sim.data.test.MethodMetricsImpl;
 
 import com.sun.net.httpserver.HttpExchange;
 import com.sun.net.httpserver.HttpHandler;
@@ -44,8 +45,8 @@ public class AgentHandler implements HttpHandler {
 		try {
 			o = ois.readObject();
 		} catch (ClassNotFoundException e) {
-			// TODO Auto-generated catch block
-			e.printStackTrace();
+			logger.error("class not found", e);
+			throw new RuntimeException("class not found", e);
 		}
 		if (o instanceof MethodMetrics) {
 			MethodMetrics mm = (MethodMetrics) o;

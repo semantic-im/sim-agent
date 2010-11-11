@@ -23,7 +23,7 @@ import java.net.MalformedURLException;
 import java.net.URL;
 import java.net.URLConnection;
 
-import sim.data.MethodMetricsImpl;
+import sim.data.test.MethodMetricsImpl;
 
 import junit.framework.TestCase;
 
