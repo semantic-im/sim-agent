@@ -12,7 +12,7 @@
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
  * See the License for the specific language governing permissions and
  * limitations under the License.
- */ 
+ */
 package sim.agent;
 
 import java.io.IOException;
@@ -28,26 +28,27 @@ import org.slf4j.LoggerFactory;
 /**
  * This class is responsible to start up the SIM-Agent application.
  * 
- * SIM-Agent acts as a measurements collector for all local instrumented applications,
- * it also collects system wide measurements and sends all collected measurements to the server. 
+ * SIM-Agent acts as a measurements collector for all local instrumented
+ * applications, it also collects system wide measurements and sends all
+ * collected measurements to the server.
  * 
  * @author mcq
- *
+ * 
  */
 public class Main {
 
 	private static final Logger logger = LoggerFactory.getLogger(Main.class);
-	
+
 	private static final String JAVA_LIBRARY_PATH = "java.library.path";
-	
+
 	private static final String MS = "MS";
 	private static final String S = "S";
 	private static final String M = "M";
-	
+
 	private int initialDelay = 0;
 	private int period = 5;
 	private TimeUnit timeUnit = TimeUnit.SECONDS;
-	
+
 	private final ScheduledExecutorService scheduler = Executors.newScheduledThreadPool(1);
 
 	/*
@@ -58,15 +59,15 @@ public class Main {
 		Thread thread = new Thread(agentServerThread);
 		thread.run();
 	}
-	
+
 	/*
 	 * Runs the agent thread and also start the http server
 	 */
 	public boolean runAgent() {
 		assert period > 0;
-		
+
 		startServer();
-		
+
 		AgentThread agentThread = new AgentThread();
 		try {
 			scheduler.scheduleAtFixedRate(agentThread, initialDelay, period, timeUnit);
@@ -76,18 +77,18 @@ public class Main {
 		}
 		return true;
 	}
-	
+
 	/**
 	 * @param args
 	 */
 	public static void main(String[] args) throws IOException {
 		Main main = new Main();
-		
+
 		URL libURL = main.getClass().getResource("/libsigar-x86-linux.so");
 		String libraryPath = System.getProperties().getProperty(JAVA_LIBRARY_PATH);
-		libraryPath += libraryPath + ":" + libURL.getPath().substring(0, libURL.getPath().lastIndexOf("/"));
+		libraryPath += ":.:" + libURL.getPath().substring(0, libURL.getPath().lastIndexOf("/"));
 		System.getProperties().setProperty(JAVA_LIBRARY_PATH, libraryPath);
-		
+
 		switch (args.length) {
 		case 0:
 			main.printUsage();
@@ -99,9 +100,9 @@ public class Main {
 		case 1:
 			main.period = main.readPeriod(args[0]);
 		}
-		System.out.println("using parameters : period=" + main.period + ", timeUnit=" + main.timeUnit + 
-				", initialDelay=" + main.initialDelay);
-		
+		System.out.println("using parameters : period=" + main.period + ", timeUnit=" + main.timeUnit
+				+ ", initialDelay=" + main.initialDelay);
+
 		System.out.println("Starting Metrics Agent ...");
 		if (main.runAgent()) {
 			System.out.println("Metrics Agent successfully started.");
@@ -116,11 +117,12 @@ public class Main {
 		System.out.println("\tjava sim.agent.Main period timeUnit initialDelay");
 		System.out.println("");
 		System.out.println("\tperiod : the time period between each metrics read; 5 is the default value.");
-		System.out.println("\ttimeUnit : the time unit of the period and initial delay parameters. Possible values are MS, S (default value) or M (milliseconds, seconds or minutes)");
+		System.out
+				.println("\ttimeUnit : the time unit of the period and initial delay parameters. Possible values are MS, S (default value) or M (milliseconds, seconds or minutes)");
 		System.out.println("\tinitialDelay : the time to delay first execution; 0 is default");
 		System.out.println("");
 	}
-	
+
 	private int readInitialDelay(String initialDelayString) {
 		int anInitialDelay = 0;
 		try {
@@ -153,9 +155,9 @@ public class Main {
 		} else if (timeUnitString.toUpperCase().equals(M)) {
 			anTimeUnit = TimeUnit.MINUTES;
 		} else {
-			System.out.println("The time unit parameter can have one of the values : MS, S and M. " +
-					"Those stand for milliseconds, seconds and minutes.");
-			System.exit(0);			
+			System.out.println("The time unit parameter can have one of the values : MS, S and M. "
+					+ "Those stand for milliseconds, seconds and minutes.");
+			System.exit(0);
 		}
 		return anTimeUnit;
 	}
