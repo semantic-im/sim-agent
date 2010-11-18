@@ -26,6 +26,7 @@ import org.hyperic.sigar.Mem;
 import org.hyperic.sigar.ProcFd;
 import org.hyperic.sigar.Sigar;
 import org.hyperic.sigar.SigarException;
+import org.hyperic.sigar.SigarNotImplementedException;
 import org.hyperic.sigar.SigarPermissionDeniedException;
 import org.hyperic.sigar.Swap;
 import org.slf4j.Logger;
@@ -43,6 +44,8 @@ public class AgentThread implements Runnable {
 	
 	private Sigar sigar = null;
 	
+	boolean openFileDescriptorsMetrics = true;
+	
 	/*
 	 * Initializae the agent thread
 	 */
@@ -57,11 +60,9 @@ public class AgentThread implements Runnable {
 	public void run() {
 		//logger.info("agent running ... ");
 
-		long openFileDescriptors = 0;
-		
 		Mem mem = null;
 		Swap swap = null;
-		long[] procList = null;
+		
 		long readBytes = 0;
 		long writeBytes = 0;
 		CpuPerc cpuPerc = null;
@@ -69,6 +70,47 @@ public class AgentThread implements Runnable {
 		try {
 			mem = sigar.getMem();
 			swap = sigar.getSwap();
+			
+			FileSystem[] fileSystemList = sigar.getFileSystemList();
+			for (int i = 0; i < fileSystemList.length; i++) {
+				FileSystemUsage fileSystemUsage = sigar.getFileSystemUsage(fileSystemList[i].getDirName());
+				readBytes += fileSystemUsage.getDiskReadBytes();
+				writeBytes += fileSystemUsage.getDiskWriteBytes();
+			}
+			
+			cpuPerc = sigar.getCpuPerc();
+			cpu = sigar.getCpu(); //take the whole lis tof cpus
+		
+			OperatingSystemMXBean osMXBean = ManagementFactory.getOperatingSystemMXBean();
+	
+			logger.info("system load average : " + osMXBean.getSystemLoadAverage());
+			logger.info("total system free memory : " + mem.getActualFree());
+			logger.info("total system used memory : " + mem.getActualUsed());
+			logger.info("total system used swap space : " + swap.getUsed());
+			logger.info("system open file descriptor count : " + getOpenFileDescriptors());
+			logger.info("swap in : " + swap.getPageIn());
+			logger.info("swap out : " + swap.getPageOut());
+			logger.info("i/o in : " + readBytes);
+			logger.info("i/o out : " + writeBytes);
+			logger.info("system intrerrupts percentage : " + cpuPerc.getIrq());
+			//logger.info("system context switches : " + cpuPerc.);
+			logger.info("user time : " + cpu.getUser());
+			logger.info("system time : " + cpu.getSys());
+			logger.info("idle time : " + cpu.getIdle());
+			logger.info("wait time : " + cpu.getWait());
+		} catch (SigarException e) {
+			logger.error("could not get sigar objects from Sigar library. cause is : " + e.getMessage(), e);
+			return; //TODO decide wether stop agent or just this run
+		}
+	}
+
+	private long getOpenFileDescriptors() throws SigarException {
+		if (!openFileDescriptorsMetrics) {
+			return 0;
+		}
+		long openFileDescriptors = 0;
+		try {
+			long[] procList = null;
 			procList = sigar.getProcList();
 			for (int i =0; i < procList.length; i++) {
 				ProcFd procFd = null;
@@ -80,38 +122,10 @@ public class AgentThread implements Runnable {
 				}
 				openFileDescriptors += procFd.getTotal();
 			}
-			
-			FileSystem[] fileSystemList = sigar.getFileSystemList();
-			for (int i = 0; i < fileSystemList.length; i++) {
-				FileSystemUsage fileSystemUsage = sigar.getFileSystemUsage(fileSystemList[i].getDirName());
-				readBytes += fileSystemUsage.getDiskReadBytes();
-				writeBytes += fileSystemUsage.getDiskWriteBytes();
-			}
-			
-			cpuPerc = sigar.getCpuPerc();
-			cpu = sigar.getCpu(); //take the whole lis tof cpus
-		} catch (SigarException e) {
-			logger.error("could not get sigar objects from Sigar library. cause is : " + e.getMessage(), e);
-			return; //TODO decide wether stop agent or just this run
+		} catch (SigarNotImplementedException e) {
+			openFileDescriptorsMetrics = false;
+			return 0;
 		}
-		
-		OperatingSystemMXBean osMXBean = ManagementFactory.getOperatingSystemMXBean();
-
-		logger.info("system load average : " + osMXBean.getSystemLoadAverage());
-		logger.info("total system free memory : " + mem.getActualFree());
-		logger.info("total system used memory : " + mem.getActualUsed());
-		logger.info("total system used swap space : " + swap.getUsed());
-		logger.info("system open file descriptor count : " + openFileDescriptors);
-		logger.info("swap in : " + swap.getPageIn());
-		logger.info("swap out : " + swap.getPageOut());
-		logger.info("i/o in : " + readBytes);
-		logger.info("i/o out : " + writeBytes);
-		logger.info("system intrerrupts percentage : " + cpuPerc.getIrq());
-		//logger.info("system context switches : " + cpuPerc.);
-		logger.info("user time : " + cpu.getUser());
-		logger.info("system time : " + cpu.getSys());
-		logger.info("idle time : " + cpu.getIdle());
-		logger.info("wait time : " + cpu.getWait());
+		return openFileDescriptors;
 	}
-
 }

@@ -88,7 +88,9 @@ public class Main {
 		String libraryPath = System.getProperties().getProperty(JAVA_LIBRARY_PATH);
 		libraryPath += ":.:" + libURL.getPath().substring(0, libURL.getPath().lastIndexOf("/"));
 		System.getProperties().setProperty(JAVA_LIBRARY_PATH, libraryPath);
-
+		
+		//System.getProperties().setProperty("org.hyperic.sigar.path", "/home/valer/Softs/hyperic-sigar-1.6.3/sigar-bin/lib");
+		
 		switch (args.length) {
 		case 0:
 			main.printUsage();
