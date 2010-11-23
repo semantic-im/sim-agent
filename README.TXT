@@ -1,7 +1,13 @@
 RUNNING
 =======
 
-Run the main method from the sim.agent.Main class
+Run the main method from the sim.agent.Main.
+
+If the java version used is not JDK 6 then add the following argument to VM : -Dcom.sun.management.jmxremote
+This is used for allowing jconsole to connect to the application on a local machine.
+
+If a remote connection is needed through jconsole then the following arguments mus tbe added to VM :
+-Dcom.sun.management.jmxremote.port=9999 -Dcom.sun.management.jmxremote.authenticate=false -Dcom.sun.management.jmxremote.ssl=false
 
 The main class can be invoked with 3 parameters : period, timeUnit and initialDelay
 - period : the time period between each metrics read; 5 is the default value

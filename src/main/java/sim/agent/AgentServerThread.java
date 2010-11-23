@@ -29,6 +29,7 @@ import com.sun.net.httpserver.HttpServer;
  * @author valer
  *
  */
+@SuppressWarnings("restriction")
 public class AgentServerThread implements Runnable {
 
 	private static final Logger logger = LoggerFactory.getLogger(AgentServerThread.class);

@@ -15,6 +15,7 @@
  */ 
 package sim.agent;
 
+import java.io.EOFException;
 import java.io.IOException;
 import java.io.ObjectInputStream;
 import java.io.OutputStream;
@@ -22,8 +23,8 @@ import java.io.OutputStream;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import sim.data.Collector;
 import sim.data.MethodMetrics;
-import sim.data.test.MethodMetricsImpl;
 
 import com.sun.net.httpserver.HttpExchange;
 import com.sun.net.httpserver.HttpHandler;
@@ -34,43 +35,46 @@ import com.sun.net.httpserver.HttpHandler;
  * @author valer
  *
  */
+@SuppressWarnings("restriction")
 public class AgentHandler implements HttpHandler {
 
 	private static final Logger logger = LoggerFactory.getLogger(AgentHandler.class);
+	
+	private static final int MAX_METRICS_READ = 100;
 	
 	@Override
 	public void handle(HttpExchange xchg) throws IOException {
 		ObjectInputStream ois = new ObjectInputStream(xchg.getRequestBody());
 		Object o = null;
 		try {
-			o = ois.readObject();
+			int count = 0;
+			while (true) {
+				if (count == MAX_METRICS_READ) {
+					logger.info("max object read of " + MAX_METRICS_READ + " was reached, closing connection");
+					break;
+				}
+				try {
+					o = ois.readObject();
+					count++;
+				} catch (EOFException e) {
+					logger.info("no more data to read, closing connection ...");
+					break;
+				}
+				if (o instanceof MethodMetrics) {
+					MethodMetrics mm = (MethodMetrics) o;
+					Collector.addMeasurement(mm);
+					logger.info(mm.toString());
+				}
+			}
 		} catch (ClassNotFoundException e) {
 			logger.error("class not found", e);
 			throw new RuntimeException("class not found", e);
-		}
-		if (o instanceof MethodMetrics) {
-			MethodMetrics mm = (MethodMetrics) o;
-			logger.info(mm.toString());
 		}
 
 		xchg.sendResponseHeaders(200, "SUCCESS".length());
 	    OutputStream os = xchg.getResponseBody();
 	    os.write("SUCCESS".getBytes());
 	    os.close();
-
-		/*
-	    Headers headers = xchg.getRequestHeaders();
-	    Set<Map.Entry<String, List<String>>> entries = headers.entrySet();
-
-	    StringBuffer response = new StringBuffer();
-	    for (Map.Entry<String, List<String>> entry : entries)
-	      response.append(entry.toString() + "\n");
-
-	    xchg.sendResponseHeaders(200, response.length());
-	    OutputStream os = xchg.getResponseBody();
-	    os.write(response.toString().getBytes());
-	    os.close();
-	    */
 	}
 
 }

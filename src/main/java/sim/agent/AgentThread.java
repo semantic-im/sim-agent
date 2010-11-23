@@ -17,6 +17,10 @@ package sim.agent;
 
 import java.lang.management.ManagementFactory;
 import java.lang.management.OperatingSystemMXBean;
+import java.text.DecimalFormat;
+
+import javax.management.MBeanServer;
+import javax.management.ObjectName;
 
 import org.hyperic.sigar.Cpu;
 import org.hyperic.sigar.CpuPerc;
@@ -32,6 +36,11 @@ import org.hyperic.sigar.Swap;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import sim.agent.mbean.Agent;
+import sim.data.Collector;
+import sim.data.SystemMetrics;
+import sim.data.SystemMetricsImpl;
+
 /**
  * This is the thread reading the system metrics. It is running periodically.
  * 
@@ -43,6 +52,7 @@ public class AgentThread implements Runnable {
 	private static final Logger logger = LoggerFactory.getLogger(AgentThread.class);
 	
 	private Sigar sigar = null;
+	private Agent agentMBean = null;
 	
 	boolean openFileDescriptorsMetrics = true;
 	
@@ -51,6 +61,16 @@ public class AgentThread implements Runnable {
 	 */
 	public AgentThread() {
 		sigar = new Sigar();
+		
+		MBeanServer mbs = ManagementFactory.getPlatformMBeanServer(); 
+		try {
+			ObjectName name = new ObjectName("sim.agent:type=Agent"); 
+			agentMBean = new Agent(); 
+			mbs.registerMBean(agentMBean, name);
+		} catch (Exception e) {
+			logger.error("exception thring to register mbean", e);
+			throw new RuntimeException("exception thring to register mbean", e);
+		} 
 	}
 	
 	/* (non-Javadoc)
@@ -79,29 +99,77 @@ public class AgentThread implements Runnable {
 			}
 			
 			cpuPerc = sigar.getCpuPerc();
-			cpu = sigar.getCpu(); //take the whole lis tof cpus
+			cpu = sigar.getCpu(); //take the whole list of cpus
 		
 			OperatingSystemMXBean osMXBean = ManagementFactory.getOperatingSystemMXBean();
-	
-			logger.info("system load average : " + osMXBean.getSystemLoadAverage());
-			logger.info("total system free memory : " + mem.getActualFree());
-			logger.info("total system used memory : " + mem.getActualUsed());
-			logger.info("total system used swap space : " + swap.getUsed());
-			logger.info("system open file descriptor count : " + getOpenFileDescriptors());
-			logger.info("swap in : " + swap.getPageIn());
-			logger.info("swap out : " + swap.getPageOut());
-			logger.info("i/o in : " + readBytes);
-			logger.info("i/o out : " + writeBytes);
-			logger.info("system intrerrupts percentage : " + cpuPerc.getIrq());
+			
+			double systemLoadAverage = osMXBean.getSystemLoadAverage();
+			long actualFree = getSizeInKb(mem.getActualFree());
+			long actualUsed = getSizeInKb(mem.getActualUsed());
+			long swapUsed = getSizeInKb(swap.getUsed());
+			long openFileDescriptors = getOpenFileDescriptors();
+			long swapPageIn = swap.getPageIn();
+			long swapPageOut = swap.getPageOut();
+			long ioRead = getSizeInKb(readBytes);
+			long ioWrite = getSizeInKb(writeBytes);
+			double userPerc = cpuPerc.getUser();
+			double sysPerc = cpuPerc.getSys();
+			double idlePerc = cpuPerc.getIdle();
+			double waitPerc = cpuPerc.getWait();
+			double irqPerc = cpuPerc.getIrq();
+			double user = getPeriodInSec(cpu.getUser());
+			double sys = getPeriodInSec(cpu.getSys());
+			double idle = getPeriodInSec(cpu.getIdle());
+			double wait = getPeriodInSec(cpu.getWait());
+			double irq = getPeriodInSec(cpu.getIrq());
+			
+			agentMBean.loadData(systemLoadAverage, actualFree, actualUsed, swapUsed, openFileDescriptors, swapPageIn, swapPageOut,
+					ioRead, ioWrite, userPerc, sysPerc, idlePerc, waitPerc, irqPerc, user, sys, idle, wait, irq);
+			
+			SystemMetrics systemMetrics = new SystemMetricsImpl(systemLoadAverage, actualFree, actualUsed, swapUsed, openFileDescriptors, swapPageIn, swapPageOut,
+					ioRead, ioWrite, userPerc, sysPerc, idlePerc, waitPerc, irqPerc, user, sys, idle, wait, irq);
+			Collector.addMeasurement(systemMetrics);
+			
+			logger.info("system load average : " + CpuPerc.format(systemLoadAverage));
+			logger.info("total system free memory : " + formatSize(actualFree));
+			logger.info("total system used memory : " + formatSize(actualUsed));
+			logger.info("total system used swap space : " + formatSize(swapUsed));
+			logger.info("system open file descriptor count : " + openFileDescriptors);
+			logger.info("swap in : " + swapPageIn + " pages");
+			logger.info("swap out : " + swapPageOut + " pages");
+			logger.info("i/o in : " + formatSize(ioRead));
+			logger.info("i/o out : " + formatSize(ioWrite));
 			//logger.info("system context switches : " + cpuPerc.);
-			logger.info("user time : " + cpu.getUser());
-			logger.info("system time : " + cpu.getSys());
-			logger.info("idle time : " + cpu.getIdle());
-			logger.info("wait time : " + cpu.getWait());
+			logger.info("user % : " + CpuPerc.format(userPerc));
+			logger.info("system % : " + CpuPerc.format(sysPerc));
+			logger.info("idle % : " + CpuPerc.format(idlePerc));
+			logger.info("wait % : " + CpuPerc.format(waitPerc));
+			logger.info("irq % : " + CpuPerc.format(irqPerc));
+			logger.info("user time : " + formatPeriod(user));
+			logger.info("system time : " + formatPeriod(sys));
+			logger.info("idle time : " + formatPeriod(idle));
+			logger.info("wait time : " + formatPeriod(wait));
+			logger.info("irq time : " + formatPeriod(irq));
 		} catch (SigarException e) {
 			logger.error("could not get sigar objects from Sigar library. cause is : " + e.getMessage(), e);
 			return; //TODO decide wether stop agent or just this run
 		}
+	}
+
+	private double getPeriodInSec(long millis) {
+		return millis/1000.0;
+	}
+
+	private String formatPeriod(double sec) {
+		return new DecimalFormat("#.00").format(sec) + " sec";
+	}
+
+	private long getSizeInKb(long bytes) {
+		return bytes/1024;
+	}
+	
+	private String formatSize(double kbytes) {
+		return new DecimalFormat("#").format(kbytes) + " kB";
 	}
 
 	private long getOpenFileDescriptors() throws SigarException {

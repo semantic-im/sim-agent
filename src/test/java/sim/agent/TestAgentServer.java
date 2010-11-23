@@ -23,9 +23,8 @@ import java.net.MalformedURLException;
 import java.net.URL;
 import java.net.URLConnection;
 
-import sim.data.test.MethodMetricsImpl;
-
 import junit.framework.TestCase;
+import sim.data.MethodMetricsImpl;
 
 /**
  * 
@@ -50,15 +49,17 @@ public class TestAgentServer extends TestCase {
 	
 	public void test() throws MalformedURLException, IOException {
 		URL url = new URL("http://localhost:8088/agent"); 
-	    URLConnection urlConn = url.openConnection(); 
+	    URLConnection urlConn = url.openConnection();
 	    urlConn.setDoInput(true); 
 	    urlConn.setDoOutput(true); 
 	    urlConn.setUseCaches(false);
 	    
 	    //DataOutputStream dos = new DataOutputStream (urlConn.getOutputStream());
 	    	    
-	    MethodMetricsImpl tmm = new MethodMetricsImpl();
+	    MethodMetricsImpl tmm = new MethodMetricsImpl(TestAgentServer.class.getName(), "test");
 	    ObjectOutputStream oos = new ObjectOutputStream(urlConn.getOutputStream());
+	    oos.writeObject(tmm);
+	    
 	    oos.writeObject(tmm);
 	    
 	    //String message = "NEW_ITEM=" + URLEncoder.encode("sdfgsdsgs sdfsf", "UTF-8"); 
