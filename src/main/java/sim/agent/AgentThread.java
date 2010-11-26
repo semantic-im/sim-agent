@@ -93,7 +93,15 @@ public class AgentThread implements Runnable {
 			
 			FileSystem[] fileSystemList = sigar.getFileSystemList();
 			for (int i = 0; i < fileSystemList.length; i++) {
-				FileSystemUsage fileSystemUsage = sigar.getFileSystemUsage(fileSystemList[i].getDirName());
+				String devName = fileSystemList[i].getDevName();
+				//logger.info("get file system usage for filesystem : " + devName);
+				FileSystemUsage fileSystemUsage = null;
+				try {
+					fileSystemUsage = sigar.getFileSystemUsage(devName);
+				} catch (SigarException e) {
+					//logger.warn("could not get file system usage for device name : " + devName);
+					continue;
+				}
 				readBytes += fileSystemUsage.getDiskReadBytes();
 				writeBytes += fileSystemUsage.getDiskWriteBytes();
 			}
@@ -104,6 +112,9 @@ public class AgentThread implements Runnable {
 			OperatingSystemMXBean osMXBean = ManagementFactory.getOperatingSystemMXBean();
 			
 			double systemLoadAverage = osMXBean.getSystemLoadAverage();
+			if (systemLoadAverage < 0) {
+				systemLoadAverage = -1.0;
+			}
 			long actualFree = getSizeInKb(mem.getActualFree());
 			long actualUsed = getSizeInKb(mem.getActualUsed());
 			long swapUsed = getSizeInKb(swap.getUsed());
