@@ -15,6 +15,17 @@
 		<name>Softgress</name>
 		<url>http://www.softgress.com</url>
 	</organization>
+	<licenses>
+		<license>
+			<name>Apache License, Version 2.0</name>
+			<url>http://www.apache.org/licenses/LICENSE-2.0</url>
+			<distribution>repo</distribution>
+		</license>
+	</licenses>
+	<scm>
+		<url>https://github.com/semantic-im/sim-agent</url>
+		<connection>scm:git:git://github.com/semantic-im/sim-agent.git</connection>
+	</scm>
 	<dependencies>
 		<dependency>
 			<groupId>junit</groupId>
