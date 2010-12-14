@@ -52,6 +52,8 @@ public class Main {
 	private int period = 5;
 	private TimeUnit timeUnit = TimeUnit.SECONDS;
 
+	public static String serverAddress = "localhost";
+
 	private final ScheduledExecutorService scheduler = Executors.newScheduledThreadPool(1);
 
 	/*
@@ -91,17 +93,17 @@ public class Main {
 	public static void main(String[] args) throws IOException {
 		Main main = new Main();
 
-		URL libURL = main.getClass().getResource("/libsigar-x86-linux.so");
+		URL libURL = main.getClass().getResource("/logback.xml");
 		String libraryPath = System.getProperties().getProperty(JAVA_LIBRARY_PATH);
 		libraryPath += ":.:" + libURL.getPath().substring(0, libURL.getPath().lastIndexOf("/"));
 		System.getProperties().setProperty(JAVA_LIBRARY_PATH, libraryPath);
-		
-		//System.getProperties().setProperty("org.hyperic.sigar.path", "/home/valer/Softs/hyperic-sigar-1.6.3/sigar-bin/lib");
-		
+
 		switch (args.length) {
 		case 0:
 			main.printUsage();
 			break;
+		case 4:
+			Main.serverAddress = args[3];
 		case 3:
 			main.initialDelay = main.readInitialDelay(args[2]);
 		case 2:
@@ -110,7 +112,7 @@ public class Main {
 			main.period = main.readPeriod(args[0]);
 		}
 		System.out.println("using parameters : period=" + main.period + ", timeUnit=" + main.timeUnit
-				+ ", initialDelay=" + main.initialDelay);
+				+ ", initialDelay=" + main.initialDelay + ", server=" + Main.serverAddress);
 
 		System.out.println("Starting Metrics Agent ...");
 		if (main.runAgent()) {
@@ -123,12 +125,13 @@ public class Main {
 	private void printUsage() {
 		System.out.println("Metrics Agent Usage :");
 		System.out.println("");
-		System.out.println("\tjava sim.agent.Main period timeUnit initialDelay");
+		System.out.println("\tjava sim.agent.Main period timeUnit initialDelay server");
 		System.out.println("");
 		System.out.println("\tperiod : the time period between each metrics read; 5 is the default value.");
 		System.out
 				.println("\ttimeUnit : the time unit of the period and initial delay parameters. Possible values are MS, S (default value) or M (milliseconds, seconds or minutes)");
 		System.out.println("\tinitialDelay : the time to delay first execution; 0 is default");
+		System.out.println("\tserver : server address; localhost is default");
 		System.out.println("");
 	}
 
