@@ -12,7 +12,7 @@
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
  * See the License for the specific language governing permissions and
  * limitations under the License.
- */ 
+ */
 package sim.agent;
 
 import java.lang.management.ManagementFactory;
@@ -37,7 +37,6 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import sim.agent.mbean.Agent;
-import sim.data.Collector;
 import sim.data.SystemId;
 import sim.data.SystemMetrics;
 import sim.data.SystemMetricsImpl;
@@ -46,48 +45,49 @@ import sim.data.SystemMetricsImpl;
  * This is the thread reading the system metrics. It is running periodically.
  * 
  * @author valer
- *
+ * 
  */
 public class AgentThread implements Runnable {
 
 	private static final Logger logger = LoggerFactory.getLogger(AgentThread.class);
-	
+
 	private SystemId systemId;
-	
+
 	private Sigar sigar = null;
 	private Agent agentMBean = null;
-	
+
 	boolean openFileDescriptorsMetrics = true;
-	
+
 	/*
 	 * Initializae the agent thread
 	 */
 	public AgentThread(SystemId systemId) {
 		this.systemId = systemId;
-		
+
 		sigar = new Sigar();
-		
-		MBeanServer mbs = ManagementFactory.getPlatformMBeanServer(); 
+
+		MBeanServer mbs = ManagementFactory.getPlatformMBeanServer();
 		try {
-			ObjectName name = new ObjectName("sim.agent:type=Agent"); 
-			agentMBean = new Agent(); 
+			ObjectName name = new ObjectName("sim.agent:type=Agent");
+			agentMBean = new Agent();
 			mbs.registerMBean(agentMBean, name);
 		} catch (Exception e) {
 			logger.error("exception thring to register mbean", e);
 			throw new RuntimeException("exception thring to register mbean", e);
-		} 
+		}
 	}
-	
-	/* (non-Javadoc)
+
+	/*
+	 * (non-Javadoc)
 	 * @see java.lang.Runnable#run()
 	 */
 	@Override
 	public void run() {
-		//logger.info("agent running ... ");
+		// logger.info("agent running ... ");
 
 		Mem mem = null;
 		Swap swap = null;
-		
+
 		long readBytes = 0;
 		long writeBytes = 0;
 		CpuPerc cpuPerc = null;
@@ -95,27 +95,29 @@ public class AgentThread implements Runnable {
 		try {
 			mem = sigar.getMem();
 			swap = sigar.getSwap();
-			
+
 			FileSystem[] fileSystemList = sigar.getFileSystemList();
 			for (int i = 0; i < fileSystemList.length; i++) {
 				String devName = fileSystemList[i].getDevName();
-				//logger.info("get file system usage for filesystem : " + devName);
+				// logger.info("get file system usage for filesystem : " +
+				// devName);
 				FileSystemUsage fileSystemUsage = null;
 				try {
 					fileSystemUsage = sigar.getFileSystemUsage(devName);
 				} catch (SigarException e) {
-					//logger.warn("could not get file system usage for device name : " + devName);
+					// logger.warn("could not get file system usage for device name : "
+					// + devName);
 					continue;
 				}
 				readBytes += fileSystemUsage.getDiskReadBytes();
 				writeBytes += fileSystemUsage.getDiskWriteBytes();
 			}
-			
+
 			cpuPerc = sigar.getCpuPerc();
-			cpu = sigar.getCpu(); //take the whole list of cpus
-		
+			cpu = sigar.getCpu(); // take the whole list of cpus
+
 			OperatingSystemMXBean osMXBean = ManagementFactory.getOperatingSystemMXBean();
-			
+
 			double systemLoadAverage = osMXBean.getSystemLoadAverage();
 			if (systemLoadAverage < 0) {
 				systemLoadAverage = -1.0;
@@ -138,14 +140,16 @@ public class AgentThread implements Runnable {
 			double idle = getPeriodInSec(cpu.getIdle());
 			double wait = getPeriodInSec(cpu.getWait());
 			double irq = getPeriodInSec(cpu.getIrq());
-			
-			agentMBean.loadData(systemLoadAverage, actualFree, actualUsed, swapUsed, openFileDescriptors, swapPageIn, swapPageOut,
-					ioRead, ioWrite, userPerc, sysPerc, idlePerc, waitPerc, irqPerc, user, sys, idle, wait, irq);
-			
-			SystemMetrics systemMetrics = new SystemMetricsImpl(systemId, systemLoadAverage, actualFree, actualUsed, swapUsed, openFileDescriptors, swapPageIn, swapPageOut,
-					ioRead, ioWrite, userPerc, sysPerc, idlePerc, waitPerc, irqPerc, user, sys, idle, wait, irq);
+
+			agentMBean.loadData(systemLoadAverage, actualFree, actualUsed, swapUsed, openFileDescriptors,
+					swapPageIn, swapPageOut, ioRead, ioWrite, userPerc, sysPerc, idlePerc, waitPerc, irqPerc,
+					user, sys, idle, wait, irq);
+
+			SystemMetrics systemMetrics = new SystemMetricsImpl(systemId, systemLoadAverage, actualFree,
+					actualUsed, swapUsed, openFileDescriptors, swapPageIn, swapPageOut, ioRead, ioWrite,
+					userPerc, sysPerc, idlePerc, waitPerc, irqPerc, user, sys, idle, wait, irq);
 			Collector.addMeasurement(systemMetrics);
-			
+
 			logger.info("system load average : " + CpuPerc.format(systemLoadAverage));
 			logger.info("total system free memory : " + formatSize(actualFree));
 			logger.info("total system used memory : " + formatSize(actualUsed));
@@ -155,7 +159,7 @@ public class AgentThread implements Runnable {
 			logger.info("swap out : " + swapPageOut + " pages");
 			logger.info("i/o in : " + formatSize(ioRead));
 			logger.info("i/o out : " + formatSize(ioWrite));
-			//logger.info("system context switches : " + cpuPerc.);
+			// logger.info("system context switches : " + cpuPerc.);
 			logger.info("user % : " + CpuPerc.format(userPerc));
 			logger.info("system % : " + CpuPerc.format(sysPerc));
 			logger.info("idle % : " + CpuPerc.format(idlePerc));
@@ -168,12 +172,12 @@ public class AgentThread implements Runnable {
 			logger.info("irq time : " + formatPeriod(irq));
 		} catch (SigarException e) {
 			logger.error("could not get sigar objects from Sigar library. cause is : " + e.getMessage(), e);
-			return; //TODO decide whether stop agent or just this run
+			return; // TODO decide whether stop agent or just this run
 		}
 	}
 
 	private double getPeriodInSec(long millis) {
-		return millis/1000.0;
+		return millis / 1000.0;
 	}
 
 	private String formatPeriod(double sec) {
@@ -181,9 +185,9 @@ public class AgentThread implements Runnable {
 	}
 
 	private long getSizeInKb(long bytes) {
-		return bytes/1024;
+		return bytes / 1024;
 	}
-	
+
 	private String formatSize(double kbytes) {
 		return new DecimalFormat("#").format(kbytes) + " kB";
 	}
@@ -196,12 +200,13 @@ public class AgentThread implements Runnable {
 		try {
 			long[] procList = null;
 			procList = sigar.getProcList();
-			for (int i =0; i < procList.length; i++) {
+			for (int i = 0; i < procList.length; i++) {
 				ProcFd procFd = null;
 				try {
 					procFd = sigar.getProcFd(procList[i]);
 				} catch (SigarPermissionDeniedException e) {
-					//logger.error("permission dennied for pid : " + procList[i]);
+					// logger.error("permission dennied for pid : " +
+					// procList[i]);
 					continue;
 				}
 				openFileDescriptors += procFd.getTotal();
