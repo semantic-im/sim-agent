@@ -72,7 +72,7 @@ public class Main {
 		assert period > 0;
 
 		//generate id and get name
-		SystemId systemId = new SystemId(UUID.randomUUID().toString().replace("-", ""), 
+		SystemId systemId = new SystemId(UUID.randomUUID().toString(), 
 				System.getProperty("os.name") + " " + System.getProperty("os.arch") + " " + System.getProperty("os.version"));
 		
 		startServer(systemId);
