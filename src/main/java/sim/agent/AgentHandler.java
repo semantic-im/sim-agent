@@ -25,6 +25,7 @@ import org.slf4j.LoggerFactory;
 
 import sim.data.Collector;
 import sim.data.MethodMetrics;
+import sim.data.SystemId;
 
 import com.sun.net.httpserver.HttpExchange;
 import com.sun.net.httpserver.HttpHandler;
@@ -40,7 +41,13 @@ public class AgentHandler implements HttpHandler {
 
 	private static final Logger logger = LoggerFactory.getLogger(AgentHandler.class);
 	
+	private SystemId systemId;
+	
 	private static final int MAX_METRICS_READ = 100;
+	
+	public AgentHandler(SystemId systemId) {
+		this.systemId = systemId;
+	}
 	
 	@Override
 	public void handle(HttpExchange xchg) throws IOException {
@@ -62,6 +69,7 @@ public class AgentHandler implements HttpHandler {
 				}
 				if (o instanceof MethodMetrics) {
 					MethodMetrics mm = (MethodMetrics) o;
+					mm.setSystemId(systemId);
 					Collector.addMeasurement(mm);
 					logger.info(mm.toString());
 				}

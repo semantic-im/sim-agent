@@ -21,6 +21,8 @@ import java.net.InetSocketAddress;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import sim.data.SystemId;
+
 import com.sun.net.httpserver.HttpServer;
 
 /**
@@ -34,6 +36,12 @@ public class AgentServerThread implements Runnable {
 
 	private static final Logger logger = LoggerFactory.getLogger(AgentServerThread.class);
 	
+	private SystemId systemId;
+	
+	public AgentServerThread(SystemId systemId) {
+		this.systemId = systemId;
+	}
+	
 	/* (non-Javadoc)
 	 * @see java.lang.Runnable#run()
 	 */
@@ -41,7 +49,7 @@ public class AgentServerThread implements Runnable {
 	public void run() {		
 		try {
 			HttpServer server = HttpServer.create(new InetSocketAddress(8088), 0);
-			server.createContext("/agent", new AgentHandler());
+			server.createContext("/agent", new AgentHandler(systemId));
 			server.start();
 		} catch (IOException e) {
 			logger.error("failed to start agent server", e);

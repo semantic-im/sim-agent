@@ -38,6 +38,7 @@ import org.slf4j.LoggerFactory;
 
 import sim.agent.mbean.Agent;
 import sim.data.Collector;
+import sim.data.SystemId;
 import sim.data.SystemMetrics;
 import sim.data.SystemMetricsImpl;
 
@@ -51,6 +52,8 @@ public class AgentThread implements Runnable {
 
 	private static final Logger logger = LoggerFactory.getLogger(AgentThread.class);
 	
+	private SystemId systemId;
+	
 	private Sigar sigar = null;
 	private Agent agentMBean = null;
 	
@@ -59,7 +62,9 @@ public class AgentThread implements Runnable {
 	/*
 	 * Initializae the agent thread
 	 */
-	public AgentThread() {
+	public AgentThread(SystemId systemId) {
+		this.systemId = systemId;
+		
 		sigar = new Sigar();
 		
 		MBeanServer mbs = ManagementFactory.getPlatformMBeanServer(); 
@@ -137,7 +142,7 @@ public class AgentThread implements Runnable {
 			agentMBean.loadData(systemLoadAverage, actualFree, actualUsed, swapUsed, openFileDescriptors, swapPageIn, swapPageOut,
 					ioRead, ioWrite, userPerc, sysPerc, idlePerc, waitPerc, irqPerc, user, sys, idle, wait, irq);
 			
-			SystemMetrics systemMetrics = new SystemMetricsImpl(systemLoadAverage, actualFree, actualUsed, swapUsed, openFileDescriptors, swapPageIn, swapPageOut,
+			SystemMetrics systemMetrics = new SystemMetricsImpl(systemId, systemLoadAverage, actualFree, actualUsed, swapUsed, openFileDescriptors, swapPageIn, swapPageOut,
 					ioRead, ioWrite, userPerc, sysPerc, idlePerc, waitPerc, irqPerc, user, sys, idle, wait, irq);
 			Collector.addMeasurement(systemMetrics);
 			
@@ -163,7 +168,7 @@ public class AgentThread implements Runnable {
 			logger.info("irq time : " + formatPeriod(irq));
 		} catch (SigarException e) {
 			logger.error("could not get sigar objects from Sigar library. cause is : " + e.getMessage(), e);
-			return; //TODO decide wether stop agent or just this run
+			return; //TODO decide whether stop agent or just this run
 		}
 	}
 

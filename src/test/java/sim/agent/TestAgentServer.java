@@ -24,7 +24,9 @@ import java.net.URL;
 import java.net.URLConnection;
 
 import junit.framework.TestCase;
+import sim.data.ApplicationId;
 import sim.data.MethodMetricsImpl;
+import sim.data.SystemId;
 
 /**
  * 
@@ -36,15 +38,19 @@ import sim.data.MethodMetricsImpl;
  */
 public class TestAgentServer extends TestCase {
 	
+	private ApplicationId applicationId;
+	private SystemId systemId;
+	
 	@Override
 	protected void setUp() throws Exception {
-		AgentServerThread agentServerThread = new AgentServerThread();
+		AgentServerThread agentServerThread = new AgentServerThread(systemId);
 		Thread thread = new Thread(agentServerThread);
 		thread.run();
 	}
 
 	public TestAgentServer() {
-		
+		this.applicationId = new ApplicationId("1", "App 1");
+		this.systemId = new SystemId("1", "System 1");
 	}
 	
 	public void test() throws MalformedURLException, IOException {
@@ -56,7 +62,7 @@ public class TestAgentServer extends TestCase {
 	    
 	    //DataOutputStream dos = new DataOutputStream (urlConn.getOutputStream());
 	    	    
-	    MethodMetricsImpl tmm = new MethodMetricsImpl(TestAgentServer.class.getName(), "test");
+	    MethodMetricsImpl tmm = new MethodMetricsImpl(applicationId, TestAgentServer.class.getName(), "test");
 	    ObjectOutputStream oos = new ObjectOutputStream(urlConn.getOutputStream());
 	    oos.writeObject(tmm);
 	    

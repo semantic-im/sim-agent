@@ -52,7 +52,7 @@ public class Collector {
 	}
 
 	private static class ServerComunicator extends Thread {
-		private static final String agentLocation = "http://localhost:8088/server";
+		private static final String agentLocation = "http://localhost:8099/server";
 		private static final long COLLECT_INTERVAL = 5000;
 		private static final int TIMEOUT = 5000;
 		
@@ -100,6 +100,8 @@ public class Collector {
 				}
 			} catch (IOException e) {
 				logger.error("SIM - server communication failure: " + e.getMessage());
+				//FIXME no idea if correct, I am clearing the measurements list to avoid infinite loop (if server is down then no measurement is removed from queue)
+				measurements.clear();
 			}
 		}
 	}

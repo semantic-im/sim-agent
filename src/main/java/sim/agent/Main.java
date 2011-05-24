@@ -17,6 +17,7 @@ package sim.agent;
 
 import java.io.IOException;
 import java.net.URL;
+import java.util.UUID;
 import java.util.concurrent.Executors;
 import java.util.concurrent.RejectedExecutionException;
 import java.util.concurrent.ScheduledExecutorService;
@@ -24,6 +25,8 @@ import java.util.concurrent.TimeUnit;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+
+import sim.data.SystemId;
 
 /**
  * This class is responsible to start up the SIM-Agent application.
@@ -54,8 +57,8 @@ public class Main {
 	/*
 	 * Starts the Http Server listening for method metrics
 	 */
-	public void startServer() {
-		AgentServerThread agentServerThread = new AgentServerThread();
+	public void startServer(SystemId systemId) {
+		AgentServerThread agentServerThread = new AgentServerThread(systemId);
 		Thread thread = new Thread(agentServerThread);
 		thread.run();
 	}
@@ -66,9 +69,13 @@ public class Main {
 	public boolean runAgent() {
 		assert period > 0;
 
-		startServer();
+		//generate id and get name
+		SystemId systemId = new SystemId(UUID.randomUUID().toString().replace("-", ""), 
+				System.getProperty("os.name") + " " + System.getProperty("os.arch") + " " + System.getProperty("os.version"));
+		
+		startServer(systemId);
 
-		AgentThread agentThread = new AgentThread();
+		AgentThread agentThread = new AgentThread(systemId);
 		try {
 			scheduler.scheduleAtFixedRate(agentThread, initialDelay, period, timeUnit);
 		} catch (RejectedExecutionException e) {
