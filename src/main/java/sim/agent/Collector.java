@@ -55,7 +55,7 @@ public class Collector {
 		private static final String serverLocation = "http://" + Main.serverAddress + ":8099/server";
 		private static final long COLLECT_INTERVAL = 5000;
 		private static final int TIMEOUT = 5000;
-		private static final int MAX_METRICS_WRITE = 1000;
+		private static final int MAX_METRICS_WRITE = 10000;
 
 		public ServerComunicator() {
 			super("SIM - ServerComunicator");
