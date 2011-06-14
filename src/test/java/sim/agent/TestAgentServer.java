@@ -25,6 +25,8 @@ import java.net.URLConnection;
 
 import junit.framework.TestCase;
 import sim.data.ApplicationId;
+import sim.data.Method;
+import sim.data.MethodImpl;
 import sim.data.MethodMetricsImpl;
 import sim.data.SystemId;
 
@@ -61,8 +63,10 @@ public class TestAgentServer extends TestCase {
 	    urlConn.setUseCaches(false);
 	    
 	    //DataOutputStream dos = new DataOutputStream (urlConn.getOutputStream());
+	    
+	    Method method = new MethodImpl(applicationId, TestAgentServer.class.getName(), "test");
 	    	    
-	    MethodMetricsImpl tmm = new MethodMetricsImpl(applicationId, TestAgentServer.class.getName(), "test");
+	    MethodMetricsImpl tmm = new MethodMetricsImpl(method);
 	    ObjectOutputStream oos = new ObjectOutputStream(urlConn.getOutputStream());
 	    oos.writeObject(tmm);
 	    
