@@ -16,7 +16,12 @@
 package sim.agent;
 
 import java.io.IOException;
+import java.net.InetAddress;
+import java.net.NetworkInterface;
+import java.net.SocketException;
 import java.net.URL;
+import java.net.UnknownHostException;
+import java.util.Enumeration;
 import java.util.UUID;
 import java.util.concurrent.Executors;
 import java.util.concurrent.RejectedExecutionException;
@@ -71,10 +76,9 @@ public class Main {
 	public boolean runAgent() {
 		assert period > 0;
 
-		//generate id and get name
-		SystemId systemId = new SystemId(UUID.randomUUID().toString(), 
-				System.getProperty("os.name") + " " + System.getProperty("os.arch") + " " + System.getProperty("os.version"));
-		
+		// generate id and get name
+		SystemId systemId = generateSystemId();
+
 		startServer(systemId);
 
 		AgentThread agentThread = new AgentThread(systemId);
@@ -172,5 +176,48 @@ public class Main {
 			System.exit(0);
 		}
 		return anTimeUnit;
+	}
+
+	private static SystemId generateSystemId() {
+		String id = UUID.randomUUID().toString();
+		return new SystemId(id, getSystemName());
+	}
+
+	private static String getSystemName() {
+		StringBuilder name = new StringBuilder();
+		name.append(System.getProperty("os.name")).append(" ");
+		name.append(System.getProperty("os.arch")).append(" ");
+		name.append(System.getProperty("os.version")).append(" ");
+		name.append(getHostName()).append(" ");
+		name.append(getMAC());
+		return name.toString().trim();
+	}
+
+	private static String getMAC() {
+		StringBuilder mac = new StringBuilder();
+		try {
+			for (Enumeration<NetworkInterface> e = NetworkInterface.getNetworkInterfaces(); e
+					.hasMoreElements();) {
+				NetworkInterface ni = e.nextElement();
+				if (ni.isLoopback() || ni.isPointToPoint())
+					continue;
+				byte[] ha = ni.getHardwareAddress();
+				if (ha != null) {
+					for (int i = 0; i < ha.length; i++) {
+						mac.append(Integer.toHexString(ha[i]));
+					}
+					break;
+				}
+			}
+		} catch (SocketException e) {}
+		return mac.toString();
+	}
+
+	private static String getHostName() {
+		try {
+			return InetAddress.getLocalHost().getHostName();
+		} catch (UnknownHostException e) {
+			return "";
+		}
 	}
 }
