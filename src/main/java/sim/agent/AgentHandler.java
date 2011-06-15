@@ -24,6 +24,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import sim.data.MethodMetrics;
+import sim.data.Metrics;
 import sim.data.SystemId;
 
 import com.sun.net.httpserver.HttpExchange;
@@ -66,11 +67,14 @@ public class AgentHandler implements HttpHandler {
 					logger.debug("no more data to read, closing connection ...");
 					break;
 				}
-				if (o instanceof MethodMetrics) {
-					MethodMetrics mm = (MethodMetrics) o;
-					mm.setSystemId(systemId);
-					Collector.addMeasurement(mm);
-					logger.info(mm.toString());
+				if (o instanceof Metrics) {
+					Metrics m = (Metrics) o;
+					if (o instanceof MethodMetrics) {
+						MethodMetrics mm = (MethodMetrics) o;
+						mm.setSystemId(systemId);
+					}
+					Collector.addMeasurement(m);
+					logger.info(m.toString());
 				}
 			}
 		} catch (ClassNotFoundException e) {
