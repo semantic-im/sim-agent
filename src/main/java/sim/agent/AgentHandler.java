@@ -25,6 +25,7 @@ import org.slf4j.LoggerFactory;
 
 import sim.data.MethodMetrics;
 import sim.data.Metrics;
+import sim.data.PlatformMetrics;
 import sim.data.SystemId;
 
 import com.sun.net.httpserver.HttpExchange;
@@ -72,6 +73,10 @@ public class AgentHandler implements HttpHandler {
 					if (o instanceof MethodMetrics) {
 						MethodMetrics mm = (MethodMetrics) o;
 						mm.setSystemId(systemId);
+					}
+					if (o instanceof PlatformMetrics) {
+						PlatformMetrics pm = (PlatformMetrics) o;
+						pm.setSystemId(systemId);
 					}
 					Collector.addMeasurement(m);
 					logger.info(m.toString());
