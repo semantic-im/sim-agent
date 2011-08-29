@@ -28,6 +28,7 @@ import java.util.concurrent.RejectedExecutionException;
 import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.TimeUnit;
 
+import org.hyperic.sigar.Sigar;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -81,13 +82,26 @@ public class Main {
 
 		startServer(systemId);
 
-		AgentThread agentThread = new AgentThread(systemId);
+		// try to see if we can use sigar
 		try {
-			scheduler.scheduleAtFixedRate(agentThread, initialDelay, period, timeUnit);
-		} catch (RejectedExecutionException e) {
-			logger.error("could not start agent process, cause is : " + e.getMessage(), e);
-			return false;
+			Sigar.load();
+			// start system readings thread
+			try {
+				AgentThread agentThread = new AgentThread(systemId);
+				try {
+					scheduler.scheduleAtFixedRate(agentThread, initialDelay, period, timeUnit);
+				} catch (RejectedExecutionException e) {
+					logger.error("could not schedule system readings, system readings will be disabled: ", e);
+					return false;
+				}
+			} catch (Throwable t) {
+				logger.error("could not start system readings, system readings will be disabled", t);
+			}
+		} catch (Throwable t) {
+			logger.error("could not load sigar, system readings will be disabled", t);
 		}
+
+
 		return true;
 	}
 
@@ -118,16 +132,16 @@ public class Main {
 		System.out.println("using parameters : period=" + main.period + ", timeUnit=" + main.timeUnit
 				+ ", initialDelay=" + main.initialDelay + ", server=" + Main.serverAddress);
 
-		System.out.println("Starting Metrics Agent ...");
+		System.out.println("Starting SIM Agent ...");
 		if (main.runAgent()) {
-			System.out.println("Metrics Agent successfully started.");
+			System.out.println("SIM Agent successfully started.");
 		} else {
-			System.out.println("An error occured starting Metrics Agent. Check logs for errors.");
+			System.out.println("An error occured starting SIM Agent. Check logs for errors.");
 		}
 	}
 
 	private void printUsage() {
-		System.out.println("Metrics Agent Usage :");
+		System.out.println("SIM Agent Usage :");
 		System.out.println("");
 		System.out.println("\tjava sim.agent.Main period timeUnit initialDelay server");
 		System.out.println("");
