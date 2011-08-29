@@ -133,7 +133,7 @@ public class Main {
 		System.out.println("");
 		System.out.println("\tperiod : the time period between each metrics read; 5 is the default value.");
 		System.out
-				.println("\ttimeUnit : the time unit of the period and initial delay parameters. Possible values are MS, S (default value) or M (milliseconds, seconds or minutes)");
+		.println("\ttimeUnit : the time unit of the period and initial delay parameters. Possible values are MS, S (default value) or M (milliseconds, seconds or minutes)");
 		System.out.println("\tinitialDelay : the time to delay first execution; 0 is default");
 		System.out.println("\tserver : server address; localhost is default");
 		System.out.println("");
@@ -145,7 +145,7 @@ public class Main {
 			anInitialDelay = new Integer(initialDelayString);
 		} catch (NumberFormatException e) {
 			System.out.println("The initialDelay parameter must be an integer greater or equal than 0");
-			System.exit(0);
+			System.exit(1);
 		}
 		return anInitialDelay;
 	}
@@ -156,7 +156,7 @@ public class Main {
 			anPeriod = new Integer(periodString);
 		} catch (NumberFormatException e) {
 			System.out.println("The period parameter must be an integer greater than 0");
-			System.exit(0);
+			System.exit(1);
 		}
 		return anPeriod;
 	}
@@ -173,7 +173,7 @@ public class Main {
 		} else {
 			System.out.println("The time unit parameter can have one of the values : MS, S and M. "
 					+ "Those stand for milliseconds, seconds and minutes.");
-			System.exit(0);
+			System.exit(1);
 		}
 		return anTimeUnit;
 	}
