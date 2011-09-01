@@ -23,6 +23,7 @@ import java.io.OutputStream;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import sim.data.Context;
 import sim.data.MethodMetrics;
 import sim.data.Metrics;
 import sim.data.PlatformMetrics;
@@ -77,6 +78,10 @@ public class AgentHandler implements HttpHandler {
 					if (o instanceof PlatformMetrics) {
 						PlatformMetrics pm = (PlatformMetrics) o;
 						pm.setSystemId(systemId);
+					}
+					if (o instanceof Context) {
+						Context c = (Context) o;
+						c.setSystemId(systemId);
 					}
 					Collector.addMeasurement(m);
 					logger.info(m.toString());
