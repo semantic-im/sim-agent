@@ -16,6 +16,7 @@
 package sim.agent;
 
 import java.io.IOException;
+import java.lang.management.ManagementFactory;
 import java.net.InetAddress;
 import java.net.NetworkInterface;
 import java.net.SocketException;
@@ -28,7 +29,11 @@ import java.util.concurrent.RejectedExecutionException;
 import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.TimeUnit;
 
+import javax.management.MBeanServer;
+import javax.management.ObjectName;
+
 import org.hyperic.sigar.Sigar;
+import org.hyperic.sigar.SigarException;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -62,6 +67,8 @@ public class Main {
 
 	private final ScheduledExecutorService scheduler = Executors.newScheduledThreadPool(1);
 
+	private static boolean sigarLoadedOk = false;
+
 	/*
 	 * Starts the Http Server listening for method metrics
 	 */
@@ -77,14 +84,21 @@ public class Main {
 	public boolean runAgent() {
 		assert period > 0;
 
-		// generate id and get name
-		SystemId systemId = generateSystemId();
-
-		startServer(systemId);
-
 		// try to see if we can use sigar
 		try {
 			Sigar.load();
+			sigarLoadedOk = true;
+		} catch (Throwable t) {
+			logger.error("could not load sigar, system readings will be disabled", t);
+		}
+
+		// generate id and get name
+		SystemId systemId = generateSystemId();
+
+		// start agent server
+		startServer(systemId);
+
+		if (sigarLoadedOk) {
 			// start system readings thread
 			try {
 				AgentThread agentThread = new AgentThread(systemId);
@@ -97,8 +111,6 @@ public class Main {
 			} catch (Throwable t) {
 				logger.error("could not start system readings, system readings will be disabled", t);
 			}
-		} catch (Throwable t) {
-			logger.error("could not load sigar, system readings will be disabled", t);
 		}
 
 
@@ -194,7 +206,24 @@ public class Main {
 
 	private static SystemId generateSystemId() {
 		String id = UUID.randomUUID().toString();
-		return new SystemId(id, getSystemName());
+		long cpuCount = Runtime.getRuntime().availableProcessors();
+		long totalMemory = 0;
+		MBeanServer mbs = ManagementFactory.getPlatformMBeanServer();
+		try {
+			ObjectName os = new ObjectName(ManagementFactory.OPERATING_SYSTEM_MXBEAN_NAME);
+			totalMemory = ((Long) mbs.getAttribute(os, "TotalPhysicalMemorySize")).longValue();
+		} catch (Exception e) {}
+		if (sigarLoadedOk) {
+			Sigar sigar = new Sigar();
+			try {
+				cpuCount = sigar.getCpuInfoList().length;;
+			} catch (SigarException e) {}
+			try {
+				sigar.getMem().getTotal();
+			} catch (SigarException e) {}
+			sigar.close();
+		}
+		return new SystemId(id, getSystemName(), totalMemory, cpuCount);
 	}
 
 	private static String getSystemName() {

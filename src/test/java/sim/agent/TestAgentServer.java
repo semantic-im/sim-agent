@@ -12,7 +12,7 @@
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
  * See the License for the specific language governing permissions and
  * limitations under the License.
- */ 
+ */
 package sim.agent;
 
 import java.io.BufferedReader;
@@ -39,10 +39,10 @@ import sim.data.SystemId;
  *
  */
 public class TestAgentServer extends TestCase {
-	
+
 	private ApplicationId applicationId;
 	private SystemId systemId;
-	
+
 	@Override
 	protected void setUp() throws Exception {
 		AgentServerThread agentServerThread = new AgentServerThread(systemId);
@@ -52,44 +52,44 @@ public class TestAgentServer extends TestCase {
 
 	public TestAgentServer() {
 		this.applicationId = new ApplicationId("1", "App 1");
-		this.systemId = new SystemId("1", "System 1");
+		this.systemId = new SystemId("1", "System 1", 1024 * 1024 * 1024, 2);
 	}
-	
-	public void test() throws MalformedURLException, IOException {
-		URL url = new URL("http://localhost:8088/agent"); 
-	    URLConnection urlConn = url.openConnection();
-	    urlConn.setDoInput(true); 
-	    urlConn.setDoOutput(true); 
-	    urlConn.setUseCaches(false);
-	    
-	    //DataOutputStream dos = new DataOutputStream (urlConn.getOutputStream());
-	    
-	    Method method = new MethodImpl(applicationId, TestAgentServer.class.getName(), "test");
-	    	    
-	    MethodMetricsImpl tmm = new MethodMetricsImpl(method);
-	    ObjectOutputStream oos = new ObjectOutputStream(urlConn.getOutputStream());
-	    oos.writeObject(tmm);
-	    
-	    oos.writeObject(tmm);
-	    
-	    //String message = "NEW_ITEM=" + URLEncoder.encode("sdfgsdsgs sdfsf", "UTF-8"); 
-	    //dos.writeBytes(message); 
-	    oos.flush(); 
-	    oos.close();
-	    
-	 // the server responds by saying 
-	    // "SUCCESS" or "FAILURE"
 
-	    BufferedReader dis = new BufferedReader(new InputStreamReader(urlConn.getInputStream())); 
-	    String s = dis.readLine(); 
-	    dis.close(); 
-	  
-	    assertEquals(s, "SUCCESS");
+	public void test() throws MalformedURLException, IOException {
+		URL url = new URL("http://localhost:8088/agent");
+		URLConnection urlConn = url.openConnection();
+		urlConn.setDoInput(true);
+		urlConn.setDoOutput(true);
+		urlConn.setUseCaches(false);
+
+		//DataOutputStream dos = new DataOutputStream (urlConn.getOutputStream());
+
+		Method method = new MethodImpl(applicationId, TestAgentServer.class.getName(), "test");
+
+		MethodMetricsImpl tmm = new MethodMetricsImpl(method);
+		ObjectOutputStream oos = new ObjectOutputStream(urlConn.getOutputStream());
+		oos.writeObject(tmm);
+
+		oos.writeObject(tmm);
+
+		//String message = "NEW_ITEM=" + URLEncoder.encode("sdfgsdsgs sdfsf", "UTF-8");
+		//dos.writeBytes(message);
+		oos.flush();
+		oos.close();
+
+		// the server responds by saying
+		// "SUCCESS" or "FAILURE"
+
+		BufferedReader dis = new BufferedReader(new InputStreamReader(urlConn.getInputStream()));
+		String s = dis.readLine();
+		dis.close();
+
+		assertEquals(s, "SUCCESS");
 	}
-	
+
 	public static void main(String[] args) throws MalformedURLException, IOException {
 		TestAgentServer testAgent = new TestAgentServer();
 		testAgent.test();
 	}
-	
+
 }
