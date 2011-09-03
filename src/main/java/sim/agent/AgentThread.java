@@ -27,7 +27,9 @@ import org.hyperic.sigar.CpuPerc;
 import org.hyperic.sigar.FileSystem;
 import org.hyperic.sigar.FileSystemUsage;
 import org.hyperic.sigar.Mem;
+import org.hyperic.sigar.NetStat;
 import org.hyperic.sigar.ProcFd;
+import org.hyperic.sigar.ProcStat;
 import org.hyperic.sigar.Sigar;
 import org.hyperic.sigar.SigarException;
 import org.hyperic.sigar.SigarNotImplementedException;
@@ -56,7 +58,10 @@ public class AgentThread implements Runnable {
 	private Sigar sigar = null;
 	private Agent agentMBean = null;
 
-	boolean openFileDescriptorsMetrics = true;
+	private boolean openFileDescriptorsMetrics = true;
+
+	private long oldTcpOutbound = 0;
+	private long oldTcpInbound = 0;
 
 	/*
 	 * Initializae the agent thread
@@ -92,6 +97,9 @@ public class AgentThread implements Runnable {
 		long writeBytes = 0;
 		CpuPerc cpuPerc = null;
 		Cpu cpu = null;
+		ProcStat proc = null;
+		NetStat net = null;
+
 		try {
 			mem = sigar.getMem();
 			swap = sigar.getSwap();
@@ -141,35 +149,31 @@ public class AgentThread implements Runnable {
 			double wait = getPeriodInSec(cpu.getWait());
 			double irq = getPeriodInSec(cpu.getIrq());
 
+			proc = sigar.getProcStat();
+			net = sigar.getNetStat();
+
+			long processesCount = proc.getTotal();
+			long runningProcessesCount = proc.getRunning();
+			long threadsCount = proc.getThreads();
+			long tcpOutbound = 0;
+			long tcpInbound = 0;
+			if (oldTcpOutbound != 0)
+				tcpOutbound = net.getTcpOutboundTotal() - oldTcpOutbound;
+			if (tcpInbound != 0)
+				tcpInbound = net.getTcpInboundTotal() - oldTcpInbound;
+			oldTcpOutbound = net.getTcpOutboundTotal();
+			oldTcpInbound = net.getTcpInboundTotal();
+
 			agentMBean.loadData(systemLoadAverage, actualFree, actualUsed, swapUsed, openFileDescriptors,
 					swapPageIn, swapPageOut, ioRead, ioWrite, userPerc, sysPerc, idlePerc, waitPerc, irqPerc,
 					user, sys, idle, wait, irq);
 
 			SystemMetrics systemMetrics = new SystemMetricsImpl(systemId, systemLoadAverage, actualFree,
 					actualUsed, swapUsed, openFileDescriptors, swapPageIn, swapPageOut, ioRead, ioWrite,
-					userPerc, sysPerc, idlePerc, waitPerc, irqPerc, user, sys, idle, wait, irq);
+					userPerc, sysPerc, idlePerc, waitPerc, irqPerc, user, sys, idle, wait, irq,
+					processesCount, runningProcessesCount, threadsCount, tcpOutbound, tcpInbound);
 			Collector.addMeasurement(systemMetrics);
-
-			logger.info("system load average : " + CpuPerc.format(systemLoadAverage));
-			logger.info("total system free memory : " + formatSize(actualFree));
-			logger.info("total system used memory : " + formatSize(actualUsed));
-			logger.info("total system used swap space : " + formatSize(swapUsed));
-			logger.info("system open file descriptor count : " + openFileDescriptors);
-			logger.info("swap in : " + swapPageIn + " pages");
-			logger.info("swap out : " + swapPageOut + " pages");
-			logger.info("i/o in : " + formatSize(ioRead));
-			logger.info("i/o out : " + formatSize(ioWrite));
-			// logger.info("system context switches : " + cpuPerc.);
-			logger.info("user % : " + CpuPerc.format(userPerc));
-			logger.info("system % : " + CpuPerc.format(sysPerc));
-			logger.info("idle % : " + CpuPerc.format(idlePerc));
-			logger.info("wait % : " + CpuPerc.format(waitPerc));
-			logger.info("irq % : " + CpuPerc.format(irqPerc));
-			logger.info("user time : " + formatPeriod(user));
-			logger.info("system time : " + formatPeriod(sys));
-			logger.info("idle time : " + formatPeriod(idle));
-			logger.info("wait time : " + formatPeriod(wait));
-			logger.info("irq time : " + formatPeriod(irq));
+			logger.info(systemMetrics.toString());
 		} catch (SigarException e) {
 			logger.error("could not get sigar objects from Sigar library. cause is : " + e.getMessage(), e);
 			return; // TODO decide whether stop agent or just this run
