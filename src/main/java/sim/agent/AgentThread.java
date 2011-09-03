@@ -27,6 +27,7 @@ import org.hyperic.sigar.CpuPerc;
 import org.hyperic.sigar.FileSystem;
 import org.hyperic.sigar.FileSystemUsage;
 import org.hyperic.sigar.Mem;
+import org.hyperic.sigar.NetInterfaceStat;
 import org.hyperic.sigar.NetStat;
 import org.hyperic.sigar.ProcFd;
 import org.hyperic.sigar.ProcStat;
@@ -60,8 +61,12 @@ public class AgentThread implements Runnable {
 
 	private boolean openFileDescriptorsMetrics = true;
 
-	private long oldTcpOutbound = 0;
-	private long oldTcpInbound = 0;
+	private NetworkStatistics ns = new NetworkStatistics();
+	private long oldNetworkSent = 0;
+	private long oldNetworkReceived = 0;
+	private long oldLoopbackNetworkSent = 0;
+	private long oldLoopbackNetworkReceived = 0;
+	private boolean firstRead = true;
 
 	/*
 	 * Initializae the agent thread
@@ -98,7 +103,6 @@ public class AgentThread implements Runnable {
 		CpuPerc cpuPerc = null;
 		Cpu cpu = null;
 		ProcStat proc = null;
-		NetStat net = null;
 
 		try {
 			mem = sigar.getMem();
@@ -150,19 +154,12 @@ public class AgentThread implements Runnable {
 			double irq = getPeriodInSec(cpu.getIrq());
 
 			proc = sigar.getProcStat();
-			net = sigar.getNetStat();
 
 			long processesCount = proc.getTotal();
 			long runningProcessesCount = proc.getRunning();
 			long threadsCount = proc.getThreads();
-			long tcpOutbound = 0;
-			long tcpInbound = 0;
-			if (oldTcpOutbound != 0)
-				tcpOutbound = net.getTcpOutboundTotal() - oldTcpOutbound;
-			if (tcpInbound != 0)
-				tcpInbound = net.getTcpInboundTotal() - oldTcpInbound;
-			oldTcpOutbound = net.getTcpOutboundTotal();
-			oldTcpInbound = net.getTcpInboundTotal();
+
+			refreshNetworkStatistics(ns);
 
 			agentMBean.loadData(systemLoadAverage, actualFree, actualUsed, swapUsed, openFileDescriptors,
 					swapPageIn, swapPageOut, ioRead, ioWrite, userPerc, sysPerc, idlePerc, waitPerc, irqPerc,
@@ -171,7 +168,8 @@ public class AgentThread implements Runnable {
 			SystemMetrics systemMetrics = new SystemMetricsImpl(systemId, systemLoadAverage, actualFree,
 					actualUsed, swapUsed, openFileDescriptors, swapPageIn, swapPageOut, ioRead, ioWrite,
 					userPerc, sysPerc, idlePerc, waitPerc, irqPerc, user, sys, idle, wait, irq,
-					processesCount, runningProcessesCount, threadsCount, tcpOutbound, tcpInbound);
+					processesCount, runningProcessesCount, threadsCount, ns.tcpOutbound, ns.tcpInbound,
+					ns.networkSent, ns.networkReceived, ns.loopbackNetworkSent, ns.loopbackNetworkReceived);
 			Collector.addMeasurement(systemMetrics);
 			logger.info(systemMetrics.toString());
 		} catch (SigarException e) {
@@ -220,5 +218,51 @@ public class AgentThread implements Runnable {
 			return 0;
 		}
 		return openFileDescriptors;
+	}
+
+	private class NetworkStatistics {
+		long tcpOutbound;
+		long tcpInbound;
+		long networkSent;
+		long networkReceived;
+		long loopbackNetworkSent;
+		long loopbackNetworkReceived;
+	}
+
+	private void refreshNetworkStatistics(NetworkStatistics ns) {
+		try {
+			NetStat net = sigar.getNetStat();
+			ns.tcpOutbound = net.getTcpOutboundTotal();
+			ns.tcpInbound = net.getTcpInboundTotal();
+			long networkSent = 0;
+			long networkReceived = 0;
+			long loopbackNetworkSent = 0;
+			long loopbackNetworkReceived = 0;
+			String[] networkInterfaces = sigar.getNetInterfaceList();
+			for (String iface : networkInterfaces) {
+				NetInterfaceStat ifaceStat = sigar.getNetInterfaceStat(iface);
+				if ("lo".equalsIgnoreCase(iface)) {
+					loopbackNetworkSent = ifaceStat.getTxBytes();
+					loopbackNetworkReceived = ifaceStat.getRxBytes();
+				} else {
+					networkSent += ifaceStat.getTxBytes();
+					networkReceived += ifaceStat.getRxBytes();
+				}
+			}
+			if (firstRead)
+				firstRead = false;
+			else {
+				ns.networkSent = networkSent - oldNetworkSent;
+				ns.networkReceived = networkReceived - oldNetworkReceived;
+				ns.loopbackNetworkSent = loopbackNetworkSent - oldLoopbackNetworkSent;
+				ns.loopbackNetworkReceived = loopbackNetworkReceived - oldLoopbackNetworkReceived;
+			}
+			oldNetworkSent = networkSent;
+			oldNetworkReceived = networkReceived;
+			oldLoopbackNetworkSent = loopbackNetworkSent;
+			oldLoopbackNetworkReceived = loopbackNetworkReceived;
+		} catch (Exception e) {
+			logger.error("Error reading network statistics - log & ignore", e);
+		}
 	}
 }
