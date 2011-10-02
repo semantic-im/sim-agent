@@ -19,6 +19,7 @@ import java.io.EOFException;
 import java.io.IOException;
 import java.io.ObjectInputStream;
 import java.io.OutputStream;
+import java.util.ArrayList;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -35,7 +36,7 @@ import com.sun.net.httpserver.HttpHandler;
 /**
  * The http handle reading method metrics objects.
  * 
- * @author valer
+ * @author valer, mcq
  * 
  */
 @SuppressWarnings("restriction")
@@ -45,7 +46,7 @@ public class AgentHandler implements HttpHandler {
 
 	private SystemId systemId;
 
-	private static final int MAX_METRICS_READ = 10000;
+	private static final int MAX_METRICS_READ = 100000;
 
 	public AgentHandler(SystemId systemId) {
 		this.systemId = systemId;
@@ -55,6 +56,7 @@ public class AgentHandler implements HttpHandler {
 	public void handle(HttpExchange xchg) throws IOException {
 		ObjectInputStream ois = new ObjectInputStream(xchg.getRequestBody());
 		Object o = null;
+		ArrayList<Metrics> buffer = new ArrayList<Metrics>(10000);
 		try {
 			int count = 0;
 			while (true) {
@@ -83,19 +85,22 @@ public class AgentHandler implements HttpHandler {
 						Context c = (Context) o;
 						c.setSystemId(systemId);
 					}
-					Collector.addMeasurement(m);
-					logger.info(m.toString());
+					buffer.add(m);
+					if (logger.isDebugEnabled())
+						logger.debug(m.toString());
 				}
 			}
+			logger.info("read {} measurements from http stream", count);
 		} catch (ClassNotFoundException e) {
 			logger.error("class not found", e);
 			throw new RuntimeException("class not found", e);
 		}
-
 		xchg.sendResponseHeaders(200, "SUCCESS".length());
 		OutputStream os = xchg.getResponseBody();
 		os.write("SUCCESS".getBytes());
 		os.close();
+
+		Collector.addMeasurement(buffer);
 	}
 
 }
