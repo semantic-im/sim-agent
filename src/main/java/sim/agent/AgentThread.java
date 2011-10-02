@@ -17,7 +17,6 @@ package sim.agent;
 
 import java.lang.management.ManagementFactory;
 import java.lang.management.OperatingSystemMXBean;
-import java.text.DecimalFormat;
 
 import javax.management.MBeanServer;
 import javax.management.ObjectName;
@@ -47,7 +46,7 @@ import sim.data.SystemMetricsImpl;
 /**
  * This is the thread reading the system metrics. It is running periodically.
  * 
- * @author valer
+ * @author valer, mcq
  * 
  */
 public class AgentThread implements Runnable {
@@ -59,7 +58,7 @@ public class AgentThread implements Runnable {
 	private Sigar sigar = null;
 	private Agent agentMBean = null;
 
-	private boolean openFileDescriptorsMetrics = true;
+	private boolean openFileDescriptorsMetrics = false;
 
 	private NetworkStatistics ns = new NetworkStatistics();
 	private long oldNetworkSent = 0;
@@ -171,7 +170,7 @@ public class AgentThread implements Runnable {
 					processesCount, runningProcessesCount, threadsCount, ns.tcpOutbound, ns.tcpInbound,
 					ns.networkSent, ns.networkReceived, ns.loopbackNetworkSent, ns.loopbackNetworkReceived);
 			Collector.addMeasurement(systemMetrics);
-			logger.info(systemMetrics.toString());
+			logger.debug("", systemMetrics);
 		} catch (SigarException e) {
 			logger.error("could not get sigar objects from Sigar library. cause is : " + e.getMessage(), e);
 			return; // TODO decide whether stop agent or just this run
@@ -182,16 +181,8 @@ public class AgentThread implements Runnable {
 		return millis / 1000.0;
 	}
 
-	private String formatPeriod(double sec) {
-		return new DecimalFormat("#.00").format(sec) + " sec";
-	}
-
 	private long getSizeInKb(long bytes) {
 		return bytes / 1024;
-	}
-
-	private String formatSize(double kbytes) {
-		return new DecimalFormat("#").format(kbytes) + " kB";
 	}
 
 	private long getOpenFileDescriptors() throws SigarException {
